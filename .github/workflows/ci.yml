@@ -52,6 +52,14 @@ jobs:
         with:
           name: app-artifact
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dev dependencies for testing
+        run: npm ci
+
       - name: Run unit tests
         run: npm test
 
@@ -103,3 +111,4 @@ jobs:
 
           kubectl rollout status deployment/hello-devops
           kubectl get pods
+
