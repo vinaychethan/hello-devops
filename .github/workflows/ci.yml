@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     name: Build Node.js App
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -34,7 +34,7 @@ jobs:
 
   test:
     name: Run Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build
     steps:
       - uses: actions/checkout@v4
@@ -54,7 +54,7 @@ jobs:
 
   docker:
     name: Build & Push Docker Image
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: test
     steps:
       - uses: actions/checkout@v4
@@ -73,7 +73,7 @@ jobs:
 
   deploy:
     name: Deploy to Kubernetes (kind)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: docker
     steps:
       - uses: actions/checkout@v4
