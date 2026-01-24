@@ -12,7 +12,6 @@ jobs:
 
   build:
     name: Build
-    runs-on: self-hosted
 
     steps:
       - name: Checkout code
@@ -40,7 +39,6 @@ jobs:
 
   test:
     name: Test
-    runs-on: self-hosted
     needs: build
 
     steps:
@@ -100,15 +98,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Use Minikube Docker environment
+      - name: Apply Kubernetes manifests (create/update)
         run: |
-          eval $(minikube docker-env)
+          kubectl apply -f k8s/
+          kubectl get deploy,svc -n default
 
-      - name: Update Kubernetes deployment
+      - name: Update image and wait for rollout
         run: |
           kubectl set image deployment/hello-devops \
-            hello-devops=${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:latest
-
-          kubectl rollout status deployment/hello-devops
-          kubectl get pods
-
+            hello-devops=${{ secrets.DOCKER_USERNAME }}/hello-devops:latest -n default
+          kubectl rollout status deployment/hello-devops -n default
+          kubectl get pods -n default
