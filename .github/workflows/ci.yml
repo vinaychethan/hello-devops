@@ -6,38 +6,44 @@ on:
       - main
 
 jobs:
-  ci-cd:
+  build:
+    name: Build
     runs-on: self-hosted
-
     steps:
-      # =========================
-      # Build
-      # =========================
-      - name: Build
-        uses: actions/checkout@v4
-
-      # =========================
-      # Test
-      # =========================
-      - name: Test
-        run: |
-          echo "Running basic validation"
+      - uses: actions/checkout@v4
+      - run: |
+          echo "Build stage"
           test -f Dockerfile
+
+  test:
+    name: Test
+    runs-on: self-hosted
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          echo "Test stage"
           test -d k8s
           echo "Tests passed"
 
-      # =========================
-      # Docker
-      # =========================
-      - name: Docker
-        run: |
+  docker:
+    name: Docker
+    runs-on: self-hosted
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          echo "Docker stage"
           docker build -t hello-devops:latest .
 
-      # =========================
-      # Deploy
-      # =========================
-      - name: Deploy
-        run: |
+  deploy:
+    name: Deploy
+    runs-on: self-hosted
+    needs: docker
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          echo "Deploy stage"
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/service.yaml
           kubectl rollout status deployment/hello-devops
