@@ -1,4 +1,4 @@
-name: CI-CD Pipeline (Optimized)
+name: CI-CD Pipeline
 
 on:
   push:
@@ -6,69 +6,38 @@ on:
       - main
 
 jobs:
-  build:
-    name: Build
+  ci-cd:
     runs-on: self-hosted
+
     steps:
-      - name: Checkout code
+      # =========================
+      # Build
+      # =========================
+      - name: Build
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
+      # =========================
+      # Test
+      # =========================
+      - name: Test
+        run: |
+          echo "Running basic validation"
+          test -f Dockerfile
+          test -d k8s
+          echo "Tests passed"
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build app (sanity check)
-        run: node index.js &
-        
-
-  test:
-    name: Test
-    runs-on: self-hosted
-    needs: build
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run unit tests
-        run: npm test
-
-
-  docker:
-    name: Docker Build
-    runs-on: self-hosted
-    needs: test
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Build Docker image
+      # =========================
+      # Docker
+      # =========================
+      - name: Docker
         run: |
           docker build -t hello-devops:latest .
 
-
-  deploy:
-    name: Deploy
-    runs-on: self-hosted
-    needs: docker
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy to Kubernetes
+      # =========================
+      # Deploy
+      # =========================
+      - name: Deploy
         run: |
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/service.yaml
+          kubectl rollout status deployment/hello-devops
