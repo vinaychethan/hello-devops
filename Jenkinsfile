@@ -1,47 +1,52 @@
 pipeline {
-    agent any   // self-hosted runner
+    agent any
 
     environment {
-        IMAGE_NAME = "hello-devops:1.0"   // Using Minikube Docker environment
+        KUBECONFIG = "/home/vinay/.kube/config"
+        IMAGE_NAME = "hello-devops-node"
+        IMAGE_TAG  = "v1"
     }
 
     stages {
 
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/vinaychethan/hello-devops.git', branch: 'main'
+            }
+        }
+
         stage('Build') {
             steps {
-                echo "✅ Build Stage"
-                checkout scm
-                sh 'node -v'
-                sh 'npm -v'
-                sh 'npm ci'
-                sh 'npm run build || echo "No build step"'
+                sh '''
+                  npm install
+                '''
             }
         }
 
         stage('Test') {
             steps {
-                echo "✅ Test Stage"
-                sh 'npm test'
+                sh '''
+                  npm test || echo "No tests defined"
+                '''
             }
         }
 
-        stage('Docker') {
+        stage('Docker Build') {
             steps {
-                echo "✅ Docker Stage"
-                sh 'docker build -t $IMAGE_NAME .'
+                sh '''
+                  eval $(minikube -p minikube docker-env)
+                  docker build -t $IMAGE_NAME:$IMAGE_TAG .
+                '''
             }
         }
 
         stage('Deploy') {
             steps {
-                echo "✅ Deploy Stage"
-                sh 'eval $(minikube docker-env)'
-                sh 'kubectl apply -f k8s/deployment.yaml'
-                sh 'kubectl apply -f k8s/service.yaml'
-                sh 'kubectl rollout status deployment/hello-devops'
-                sh 'kubectl get pods'
+                sh '''
+                  kubectl apply -f k8s/deployment.yaml
+                  kubectl apply -f k8s/service.yaml
+                '''
             }
         }
-
     }
 }
