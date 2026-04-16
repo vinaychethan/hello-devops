@@ -22,21 +22,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build application
-        run: npm run build || echo "No build step"
+      - name: Debug build stage
+        run: ls -R
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-artifact
+          name: build-artifact
           path: |
-            .
-            !node_modules
+            index.js
+            package.json
+            package-lock.json
+            test/
+
 
   test:
     name: Test
@@ -44,38 +46,63 @@ jobs:
     needs: build
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: app-artifact
+          name: build-artifact
+          path: .
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install dev dependencies for testing
+      - name: Install dependencies
         run: npm ci
 
-      - name: Run unit tests
+      - name: Run tests
         run: npm test
 
-  docker:
-    name: Docker
+
+  artifact:
+    name: Artifact Packaging
     runs-on: self-hosted
     needs: test
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
+          name: build-artifact
+          path: .
+
+      - name: Verify artifact contents
+        run: ls -R
+
+      - name: Upload final artifact
+        uses: actions/upload-artifact@v4
+        with:
           name: app-artifact
+          path: |
+            index.js
+            package.json
+            package-lock.json
+
+
+  docker:
+    name: Docker Build & Push
+    runs-on: self-hosted
+    needs: artifact
+
+    steps:
+      - name: Download app artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-artifact
+          path: .
+
+      - name: Checkout Dockerfile
+        uses: actions/checkout@v4
 
       - name: Login to DockerHub
         uses: docker/login-action@v3
@@ -85,29 +112,30 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:latest .
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest .
 
       - name: Push Docker image
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
 
   deploy:
-    name: Deploy
+    name: Deploy to Kubernetes
     runs-on: self-hosted
     needs: docker
 
     steps:
-      - name: Checkout code
+      - name: Checkout manifests
         uses: actions/checkout@v4
 
-      - name: Apply Kubernetes manifests (create/update)
+      - name: Deploy to Kubernetes
         run: |
           kubectl apply -f k8s/
-          kubectl get deploy,svc -n default
-
-      - name: Update image and wait for rollout
-        run: |
           kubectl set image deployment/hello-devops \
-            hello-devops=${{ secrets.DOCKER_USERNAME }}/hello-devops:latest -n default
+            hello-devops=${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest -n default
           kubectl rollout status deployment/hello-devops -n default
+
+      - name: Verify deployment
+        run: |
           kubectl get pods -n default
+          kubectl get svc -n default
