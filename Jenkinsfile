@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        KUBECONFIG = "/home/vinay/.kube/config"
         IMAGE_NAME = "hello-devops-node"
         IMAGE_TAG  = "v1"
     }
@@ -34,7 +33,6 @@ pipeline {
         stage('Docker Build') {
             steps {
                 sh '''
-                  eval $(minikube -p minikube docker-env)
                   docker build -t $IMAGE_NAME:$IMAGE_TAG .
                 '''
             }
