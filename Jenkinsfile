@@ -2,9 +2,10 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "hello-devops-node"
-        IMAGE_TAG  = "v1"
-    }
+    KUBECONFIG = "/home/jenkins/.kube/config"
+    IMAGE_NAME = "hello-devops-node"
+    IMAGE_TAG  = "v1"
+}
 
     stages {
 
