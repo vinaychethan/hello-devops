@@ -33,9 +33,9 @@ pipeline {
         }
         stage('Deploy') {
             steps {
-                withCredentials([string(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_CONTENT')]) {
+                withCredentials([string(credentialsId: 'kubeconfig-b64', variable: 'KUBECONFIG_B64')]) {
                     sh '''
-                        printf '%s' "$KUBECONFIG_CONTENT" > /tmp/kubeconfig
+                        echo "$KUBECONFIG_B64" | base64 -d > /tmp/kubeconfig
                         KUBECONFIG=/tmp/kubeconfig kubectl apply -f k8s/deployment.yaml
                         KUBECONFIG=/tmp/kubeconfig kubectl apply -f k8s/service.yaml
                     '''
