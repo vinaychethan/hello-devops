@@ -1,20 +1,15 @@
 pipeline {
     agent any
-
     environment {
-    KUBECONFIG = "/home/jenkins/.kube/config"
-    IMAGE_NAME = "hello-devops-node"
-    IMAGE_TAG  = "v1"
-}
-
+        IMAGE_NAME = "hello-devops-node"
+        IMAGE_TAG  = "v1"
+    }
     stages {
-
         stage('Checkout') {
             steps {
                 git url: 'https://github.com/vinaychethan/hello-devops.git', branch: 'main'
             }
         }
-
         stage('Build') {
             steps {
                 sh '''
@@ -22,7 +17,6 @@ pipeline {
                 '''
             }
         }
-
         stage('Test') {
             steps {
                 sh '''
@@ -30,7 +24,6 @@ pipeline {
                 '''
             }
         }
-
         stage('Docker Build') {
             steps {
                 sh '''
@@ -38,15 +31,16 @@ pipeline {
                 '''
             }
         }
-
         stage('Deploy') {
-    steps {
-        withCredentials([string(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_CONTENT')]) {
-            sh '''
-                echo "$KUBECONFIG_CONTENT" > /tmp/kubeconfig
-                KUBECONFIG=/tmp/kubeconfig kubectl apply -f k8s/deployment.yaml
-                KUBECONFIG=/tmp/kubeconfig kubectl apply -f k8s/service.yaml
-            '''
+            steps {
+                withCredentials([string(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_CONTENT')]) {
+                    sh '''
+                        echo "$KUBECONFIG_CONTENT" > /tmp/kubeconfig
+                        KUBECONFIG=/tmp/kubeconfig kubectl apply -f k8s/deployment.yaml
+                        KUBECONFIG=/tmp/kubeconfig kubectl apply -f k8s/service.yaml
+                    '''
+                }
+            }
         }
     }
 }
