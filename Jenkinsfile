@@ -35,7 +35,7 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_CONTENT')]) {
                     sh '''
-                        echo "$KUBECONFIG_CONTENT" > /tmp/kubeconfig
+                        printf '%s' "$KUBECONFIG_CONTENT" > /tmp/kubeconfig
                         KUBECONFIG=/tmp/kubeconfig kubectl apply -f k8s/deployment.yaml
                         KUBECONFIG=/tmp/kubeconfig kubectl apply -f k8s/service.yaml
                     '''
